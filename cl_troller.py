@@ -1,28 +1,19 @@
 #!/usr/bin/python
 
 from twilio.rest import TwilioRestClient
-from pprint import pprint
-import unicodedata
 import feedparser
 import sqlite3
-import email
 import time
+import json
 import sys
-import re
 
-config = sys.argv[1]
-with open(config,"rb") as cf:
-    account_sid = cf.next().strip()
-    auth_token  = cf.next().strip()
-    to_phone = cf.next().strip()
-    from_phone = cf.next().strip()
-
-client = TwilioRestClient(account_sid, auth_token)
-
-conn = sqlite3.connect("cl_list_test.db")
-
-base_url = "http://austin.craigslist.org/search/sss?query=jute%20rug&s=0&sort=rel&format=rss"
-
+config_file = sys.argv[1]
+with open(config_file,"rb") as cf:
+    config = json.loads(cf.next().strip())
+    
+client = TwilioRestClient(config['account_sid'], config['auth_token'])
+conn = sqlite3.connect(config['db'])
+base_url = config['rss_feed'] 
 c = conn.cursor()
 
 try:
@@ -45,7 +36,7 @@ while True:
             if check is None:
                 important = (item['id'], item['title'], item['summary'], item['link'], item['published'])
                 c.execute("INSERT INTO cl_item_list VALUES (?,?,?,?,?)" , important)
-                client.messages.create(to=to_phone, from_=from_phone, body=", ".join(important))                
+                client.messages.create(to=config['to_phone'], from_=config['from_phone'], body=", ".join(important))                
         conn.commit()
         time.sleep(60*10)
     except KeyboardInterrupt as e:
