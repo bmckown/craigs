@@ -10,18 +10,6 @@ import time
 import sys
 import re
 
-def stringify(text):
-    return u"\'" + unicode(text) + u"\'"
-
-def insert(item):
-    pid = item["id"]
-    title = item["title"]
-    summary = item["summary"]
-    link = item["link"]
-    published = item["published"]
-    insert_statement = u"INSERT OR IGNORE INTO cl_item_list VALUES (" + u",".join(map(stringify,[pid,title,summary,link,published])) + u")"
-    return unicodedata.normalize('NFKD', insert_statement).encode('ascii','ignore')
-
 conn = sqlite3.connect("cl_list.db")
 
 base_url = "http://austin.craigslist.org/search/sss?query=jute%20rug&s=0&sort=rel&format=rss"
@@ -44,13 +32,11 @@ while True:
         parsed = feedparser.parse(base_url)
         for item in parsed["items"]:
             select = c.execute("SELECT * FROM cl_item_list WHERE id = ?", (item['id'],))
-            if select is None:
-                print select
-            else:
+            check = select.fetchone()
+            if check is None:
                 c.execute("INSERT INTO cl_item_list VALUES (?,?,?,?,?)" , (item['id'], item['title'], item['summary'], item['link'], item['published']))
-                print "NEW ITEM" 
         conn.commit()
-        time.sleep(6)
+        time.sleep(60*10)
     except KeyboardInterrupt as e:
         break
 
