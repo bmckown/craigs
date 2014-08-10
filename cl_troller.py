@@ -10,6 +10,13 @@ import time
 import sys
 import re
 
+config = sys.argv[1]
+with open(config,"rb") as cf:
+    account_sid = cf.next().strip()
+    auth_token  = cf.next().strip()
+
+client = TwilioRestClient(account_sid, auth_token)
+
 conn = sqlite3.connect("cl_list.db")
 
 base_url = "http://austin.craigslist.org/search/sss?query=jute%20rug&s=0&sort=rel&format=rss"
