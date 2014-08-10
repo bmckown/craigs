@@ -14,10 +14,12 @@ config = sys.argv[1]
 with open(config,"rb") as cf:
     account_sid = cf.next().strip()
     auth_token  = cf.next().strip()
+    to_phone = cf.next().strip()
+    from_phone = cf.next().strip()
 
 client = TwilioRestClient(account_sid, auth_token)
 
-conn = sqlite3.connect("cl_list.db")
+conn = sqlite3.connect("cl_list_test.db")
 
 base_url = "http://austin.craigslist.org/search/sss?query=jute%20rug&s=0&sort=rel&format=rss"
 
@@ -41,7 +43,9 @@ while True:
             select = c.execute("SELECT * FROM cl_item_list WHERE id = ?", (item['id'],))
             check = select.fetchone()
             if check is None:
-                c.execute("INSERT INTO cl_item_list VALUES (?,?,?,?,?)" , (item['id'], item['title'], item['summary'], item['link'], item['published']))
+                important = (item['id'], item['title'], item['summary'], item['link'], item['published'])
+                c.execute("INSERT INTO cl_item_list VALUES (?,?,?,?,?)" , important)
+                client.messages.create(to=to_phone, from_=from_phone, body=", ".join(important))                
         conn.commit()
         time.sleep(60*10)
     except KeyboardInterrupt as e:
