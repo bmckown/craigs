@@ -1,8 +1,8 @@
 #!/usr/bin/python
 
-from twilio.rest import TwilioRestClient
 import feedparser
 import sqlite3
+import smtplib 
 import time
 import json
 import sys
@@ -10,8 +10,11 @@ import sys
 config_file = sys.argv[1]
 with open(config_file,"rb") as cf:
     config = json.loads(cf.next().strip())
-    
-client = TwilioRestClient(config['account_sid'], config['auth_token'])
+
+server = smtplib.SMTP("smtp.gmail.com", 587)
+server.starttls()
+server.login(config["email"],config["email_password"])
+
 conn = sqlite3.connect(config['db'])
 base_url = config['rss_feed'] 
 c = conn.cursor()
@@ -36,7 +39,7 @@ while True:
             if check is None:
                 important = (item['id'], item['title'], item['summary'], item['link'], item['published'])
                 c.execute("INSERT INTO cl_item_list VALUES (?,?,?,?,?)" , important)
-                client.messages.create(to=config['to_phone'], from_=config['from_phone'], body=", ".join(important))                
+                server.sendmail(config["email"],config["email_to"], ", ".join(important).encode("utf-8").strip())
         conn.commit()
         time.sleep(60*10)
     except KeyboardInterrupt as e:
