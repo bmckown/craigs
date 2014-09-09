@@ -11,9 +11,6 @@ config_file = sys.argv[1]
 with open(config_file,"rb") as cf:
     config = json.loads(cf.next().strip())
 
-server = smtplib.SMTP("smtp.gmail.com", 587)
-server.starttls()
-server.login(config["email"],config["email_password"])
 
 conn = sqlite3.connect(config['db'])
 base_url = config['rss_feed'] 
@@ -39,7 +36,13 @@ while True:
             if check is None:
                 important = (item['id'], item['title'], item['summary'], item['link'], item['published'])
                 c.execute("INSERT INTO cl_item_list VALUES (?,?,?,?,?)" , important)
+                server = smtplib.SMTP("smtp.gmail.com", 587)
+                server.ehlo()
+                server.starttls()
+                server.ehlo()
+                server.login(config["email"],config["email_password"])
                 server.sendmail(config["email"],config["email_to"], ", ".join(important).encode("utf-8").strip())
+                server.quit()
         conn.commit()
         time.sleep(60*10)
     except KeyboardInterrupt as e:
